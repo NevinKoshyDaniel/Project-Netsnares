@@ -1,0 +1,112 @@
+version: '3.8'
+
+networks:
+  # The isolated sandbox. internal: true prevents any outbound internet access, containing the threat.
+  dmz:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 10.10.10.0/24
+
+  # The analytics network. Allows you to access Grafana from your host machine.
+  management:
+    driver: bridge
+
+volumes:
+  grafana_data:  # Persistent storage for visualization dashboards
+  loki_data:     # Persistent storage for log indexing
+
+services:
+  # ---------------------------------------------------------
+  # LAYER 1: THE TARGETS (HONEYPOTS)
+  # ---------------------------------------------------------
+  ssh_honeypot:
+    image: cowrie/cowrie:latest
+    container_name: netsnares_ssh_target
+    networks:
+      dmz:
+        ipv4_address: 10.10.10.10
+    restart: unless-stopped
+
+  web_honeypot:
+    image: nginx:alpine
+    container_name: netsnares_web_target
+    networks:
+      dmz:
+        ipv4_address: 10.10.10.20
+    restart: unless-stopped
+
+  # ---------------------------------------------------------
+  # LAYER 2: THE OBSERVER (SIDECAR SENSOR)
+  # ---------------------------------------------------------
+  ssidecar_sensor:
+    image: nicolaka/netshoot:latest
+    container_name: netsnares_pcap_sensor # rename later
+    network_mode: "service:ssh_honeypot"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    user: root
+    volumes:
+      - ./capture:/capture
+    # Notice we removed the 'apk add' part because tcpdump is already installed!
+    command: tcpdump -i any -s 96 -U -w /capture/sandbox_traffic.pcap
+    depends_on:
+      - ssh_honeypot
+
+  # ---------------------------------------------------------
+  # LAYER 3: THE ACTORS (SIMULATION ENGINE)
+  # ---------------------------------------------------------
+  baseline_generator:
+    build: 
+      context: ./traffic_generator
+      dockerfile: Dockerfile
+    container_name: netsnares_generator
+    networks:
+      dmz:
+        ipv4_address: 10.10.10.50
+    depends_on:
+      - ssh_honeypot
+      - web_honeypot
+
+  attacker_node:
+    image: kalilinux/kali-rolling
+    container_name: netsnares_attacker
+    networks:
+      - management
+      - dmz
+        #  ipv4_address: 10.10.10.66
+    command: tail -f /dev/null # Keeps the container alive so you can exec into it and run attacks
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ---------------------------------------------------------
+  # LAYER 4: THE PROCESSING & VISUALIZATION STACK
+  # ---------------------------------------------------------
+  loki:
+    image: grafana/loki:latest
+    container_name: netsnares_loki
+    networks:
+      - management
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: netsnares_grafana
+    networks:
+      - management
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=netsnares_admin
+    depends_on:
+      - loki

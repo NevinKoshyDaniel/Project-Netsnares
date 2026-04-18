@@ -1,0 +1,2 @@
+aiohttp==3.9.3
+asyncssh==2.14.2
