@@ -13,7 +13,7 @@ logging.basicConfig(
 # Target configurations matching the docker-compose DMZ network
 WEB_TARGET = "http://10.10.10.20"
 SSH_TARGET = "10.10.10.10"
-SSH_PORT = 2222 # CHANGED from 22 to 2222 based on the Nmap discovery
+SSH_PORT = 2222 
 
 # Common payloads to simulate realistic background noise
 HTTP_PATHS = ["/", "/login", "/about", "/images/logo.png", "/contact", "/admin"]

@@ -1,0 +1,13 @@
+# Use the lightweight Kali rolling image as the base
+FROM kalilinux/kali-rolling:latest
+
+RUN apt-get update && apt-get install -y \
+    nmap \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY attack.sh /attack.sh
+RUN chmod +x /attack.sh
+
+# Keep the container alive in the background so we can trigger the attack when ready
+CMD ["sleep", "infinity"]
