@@ -19,15 +19,23 @@ pipeline {
        stage('2. Test') {
             steps {
                 echo "Running Automated Unit Tests..."
-                
-                // Using triple-double-quotes (""") ensures Jenkins injects the variables correctly
-                sh """
-                docker run --name test-runner ${IMAGE_NAME}:${APP_VERSION} sh -c "pip install pytest && pytest tests/ --junitxml=test-results.xml" || true
-                """
-                
-                // Use double quotes here too
-                sh "docker cp test-runner:/test-results.xml . || true"
-                sh "docker rm test-runner || true"
+                script {
+                    try {
+                        // 1. Boot the container in the background to keep it alive
+                        sh "docker run -d --name test-runner --entrypoint tail ${IMAGE_NAME}:${APP_VERSION} -f /dev/null"
+                        
+                        // 2. Inject your tests/ folder directly into the container's root directory
+                        sh "docker cp tests/ test-runner:/tests/"
+                        
+                        // 3. Run pytest. If your tests fail, Jenkins will properly catch the failure here.
+                        sh "docker exec test-runner sh -c 'pip install pytest && pytest /tests/ --junitxml=/test-results.xml'"
+                        
+                    } finally {
+                        // 4. This 'finally' block ALWAYS runs, ensuring we grab the file and clean up even if tests fail
+                        sh "docker cp test-runner:/test-results.xml . || true"
+                        sh "docker rm -f test-runner || true"
+                    }
+                }
             }
             post {
                 always {
