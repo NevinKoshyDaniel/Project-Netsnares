@@ -16,14 +16,14 @@ pipeline {
             }
         }
 
-       stage('2. Test') {
+        stage('2. Test') {
             steps {
                 echo "Running Automated Unit Tests..."
                 script {
                     try {
                         sh "docker run -d --name test-runner --entrypoint tail ${IMAGE_NAME}:${APP_VERSION} -f /dev/null"
                         sh "docker cp tests/ test-runner:/tests/"
-                        
+                        sh "docker cp analyzer.py test-runner:/tests/analyzer.py"
                         // FIX 1: Save the XML to the universally writable /tmp/ directory
                         sh "docker exec test-runner sh -c 'pip install pytest pandas && python -m pytest /tests/ -p no:cacheprovider --junitxml=/tmp/test-results.xml'"
                         
