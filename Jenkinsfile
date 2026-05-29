@@ -24,10 +24,12 @@ pipeline {
                         sh "docker run -d --name test-runner --entrypoint tail ${IMAGE_NAME}:${APP_VERSION} -f /dev/null"
                         sh "docker cp tests/ test-runner:/tests/"
                         
-                        sh "docker exec test-runner sh -c 'pip install pytest && python -m pytest /tests/ --junitxml=/test-results.xml'"
+                        // FIX 1: Save the XML to the universally writable /tmp/ directory
+                        sh "docker exec test-runner sh -c 'pip install pytest && python -m pytest /tests/ --junitxml=/tmp/test-results.xml'"
                         
                     } finally {
-                        sh "docker cp test-runner:/test-results.xml . || true"
+                        // FIX 2: Copy the file out of the /tmp/ directory to your Jenkins workspace
+                        sh "docker cp test-runner:/tmp/test-results.xml ./test-results.xml || true"
                         sh "docker rm -f test-runner || true"
                     }
                 }
@@ -37,6 +39,7 @@ pipeline {
                     junit 'test-results.xml' 
                 }
             }
+            
         }
 
         stage('3. Code Quality') {
