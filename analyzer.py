@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.INFO, format='[*] %(message)s')
 
 # ==========================================
 # --- PIPELINE CONFIGURATION & TUNING ---
-# ==========================================
+
 CSV_PATH = "capture/parsed_telemetry.csv"
 JSON_OUTPUT = "capture/forensic_timeline.json"
 
@@ -14,7 +14,7 @@ JSON_OUTPUT = "capture/forensic_timeline.json"
 TIME_BIN = '1s' 
 
 # Heuristic Thresholds: Minimums required to trigger an alert
-VOLUME_THRESHOLD = 30       # Lowered to 30 to catch rate-limited attacks
+VOLUME_THRESHOLD = 30       # Base Limits for organized attacks
 SYN_RATIO_THRESHOLD = 40    # % of traffic that must be SYN packets for L4 Alert
 WEB_RATIO_THRESHOLD = 40    # % of traffic aimed at Port 80 for L7 Alert
 # ==========================================

