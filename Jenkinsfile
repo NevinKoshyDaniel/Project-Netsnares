@@ -16,12 +16,18 @@ pipeline {
             }
         }
 
-        stage('2. Test') {
+       stage('2. Test') {
             steps {
                 echo "Running Automated Unit Tests..."
-                sh 'docker run --name test-runner ${IMAGE_NAME}:${APP_VERSION} sh -c "pip install pytest && pytest tests/ --junitxml=test-results.xml" || true'
-                sh 'docker cp test-runner:/test-results.xml . || true'
-                sh 'docker rm test-runner || true'
+                
+                // Using triple-double-quotes (""") ensures Jenkins injects the variables correctly
+                sh """
+                docker run --name test-runner ${IMAGE_NAME}:${APP_VERSION} sh -c "pip install pytest && pytest tests/ --junitxml=test-results.xml" || true
+                """
+                
+                // Use double quotes here too
+                sh "docker cp test-runner:/test-results.xml . || true"
+                sh "docker rm test-runner || true"
             }
             post {
                 always {
