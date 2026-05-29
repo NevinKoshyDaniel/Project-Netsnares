@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        APP_VERSION = "1.0.${BUILD_NUMBER}"
+        APP_VERSION = "1.0.${BUILD_NUMBER}-temp"
         GIT_COMMIT_HASH = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
         IMAGE_NAME = "netsnares-analyzer"
         REGISTRY = "local-registry" 
