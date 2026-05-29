@@ -25,7 +25,7 @@ pipeline {
                         sh "docker cp tests/ test-runner:/tests/"
                         sh "docker cp analyzer.py test-runner:/tests/analyzer.py"
                         // FIX 1: Save the XML to the universally writable /tmp/ directory
-                        sh "docker exec test-runner sh -c 'pip install pytest pandas && python -m pytest /tests/ -p no:cacheprovider --junitxml=/tmp/test-results.xml'"
+                        sh "docker exec test-runner sh -c 'pip install pytest pandas && cd /tests/ && python -m pytest . -p no:cacheprovider --junitxml=/tmp/test-results.xml'"
                         
                     } finally {
                         // FIX 2: Copy the file out of the /tmp/ directory to your Jenkins workspace
