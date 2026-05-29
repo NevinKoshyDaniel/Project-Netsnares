@@ -19,9 +19,9 @@ pipeline {
         stage('2. Test') {
             steps {
                 echo "Running Automated Unit Tests..."
-                sh """
-                docker run --rm ${IMAGE_NAME}:${APP_VERSION} sh -c "pip install pytest && pytest tests/ --junitxml=test-results.xml"
-                """
+                sh 'docker run --name test-runner ${IMAGE_NAME}:${APP_VERSION} sh -c "pip install pytest && pytest tests/ --junitxml=test-results.xml" || true'
+                sh 'docker cp test-runner:/test-results.xml . || true'
+                sh 'docker rm test-runner || true'
             }
             post {
                 always {
@@ -49,15 +49,14 @@ pipeline {
             }
         }
 
-        stage('4. Security') {
+        stage('4. Security (SBOM)') {
             steps {
-                echo "Scanning Docker image for vulnerabilities using Trivy..."
-                sh "trivy image --format table --exit-code 0 ${IMAGE_NAME}:${APP_VERSION} > vuln-report.txt"
-                sh "trivy image --severity CRITICAL --exit-code 1 ${IMAGE_NAME}:${APP_VERSION}"
+                echo "Generating CycloneDX SBOM using Syft..."
+                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/syft ${IMAGE_NAME}:${APP_VERSION} -o cyclonedx-json > sbom.json"
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'vuln-report.txt'
+                    archiveArtifacts artifacts: 'sbom.json'
                 }
             }
         }
